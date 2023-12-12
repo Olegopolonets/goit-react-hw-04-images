@@ -5,11 +5,7 @@ import { BtnSearch, FormSearch, Header, InputSearch } from './SearchbarStyled';
 export const Searchbar = ({ onSubmit, userInput }) => {
   return (
     <Header className="searchbar">
-      <FormSearch
-        onSubmit={() => {
-          onSubmit();
-        }}
-      >
+      <FormSearch onSubmit={onSubmit}>
         <BtnSearch type="submit">
           <FaSearch
             size={40}
