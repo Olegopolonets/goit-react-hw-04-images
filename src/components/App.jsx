@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Searchbar } from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Conteiner } from './Container/Conteiner';
@@ -7,96 +7,72 @@ import { fetchImages } from 'Services/api';
 import { Button } from './Button/Button';
 import { Modal } from './Modal/Modal';
 
-export class App extends React.Component {
-  state = {
-    imagesData: [],
-    page: 1,
-    userInput: '',
-    loading: false,
-    total: 0,
-    modalImageUrl: '',
-    isModalOpen: false,
-  };
+export const App = () => {
+  const [imagesData, setImagesData] = useState([]);
+  const [page, setPage] = useState(1);
+  const [userInput, setUserInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  // const [total, setTotal] = useState(0);
+  const [modalImageUrl, setModalImageUrl] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  async componentDidMount() {
-    try {
-      this.setState({ loading: true });
-      const images = await fetchImages(this.state.userInput, this.state.page);
-      console.log(images);
-      this.setState({ imagesData: [...images.hits], total: images.total });
-    } catch (error) {
-      console.error();
-    } finally {
-      this.setState({ loading: false });
-    }
-  }
-
-  async componentDidUpdate(_, prevState) {
-    if (
-      this.state.userInput !== prevState.userInput ||
-      prevState.page !== this.state.page
-    ) {
+  useEffect(() => {
+    async function getImages() {
       try {
-        this.setState({ loading: true });
-        const images = await fetchImages(this.state.userInput, this.state.page);
-        console.log(images);
-        this.setState(prevState => ({
-          imagesData: [...prevState.imagesData, ...images.hits],
-          total: images.total,
-        }));
+        setLoading(true);
+        const images = await fetchImages(userInput, page);
+        if (page === 1) {
+          setImagesData(images.hits);
+          console.log(images);
+        } else {
+          setImagesData(prevState => [...prevState, ...images.hits]);
+          // setTotal(images.total);
+        }
       } catch (error) {
-        console.error();
+        console.log(error);
       } finally {
-        this.setState({ loading: false });
+        setLoading(false);
       }
     }
-  }
+    getImages();
+  }, [userInput, page]);
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({ page: prevState.page + 1 }));
+  const handleLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
+
   /* modal */
-  openModal = imgUrl => {
-    this.setState(prevState => ({
-      isModalOpen: !prevState.isModalOpen,
-      modalImageUrl: imgUrl,
-    }));
+  const openModal = imgUrl => {
+    setIsModalOpen(true);
+    setModalImageUrl(imgUrl);
   };
 
-  closeModal = () => {
-    this.setState(prevState => ({ isModalOpen: !prevState.isModalOpen }));
+  const closeModal = () => {
+    setIsModalOpen(false);
   };
-  /* */
 
   /* form submit  */
-  onSubmit = event => {
+  const onSubmit = event => {
     event.preventDefault();
     const userInput = event.currentTarget.elements.userInput.value;
-    this.setState({ userInput: userInput, page: 1, imagesData: [] });
+    setUserInput(userInput);
+    setPage(1);
+    setImagesData([]);
   };
   /*  */
 
-  render() {
-    return (
-      <div>
-        <Searchbar onSubmit={this.onSubmit} />
-        <Conteiner>
-          <ImageGallery
-            imagesData={this.state.imagesData}
-            openModal={this.openModal}
-          />
-          {this.state.loading === true ? <Loader /> : null}
-          {this.state.total > this.state.imagesData.length ? (
-            <Button click={this.handleLoadMore} />
-          ) : null}
-          {this.state.isModalOpen && (
-            <Modal
-              modalImageUrl={this.state.modalImageUrl}
-              closeModal={this.closeModal}
-            />
-          )}
-        </Conteiner>
-      </div>
-    );
-  }
-}
+  return (
+    <div>
+      <Searchbar onSubmit={onSubmit} />
+      <Conteiner>
+        <ImageGallery imagesData={imagesData} openModal={openModal} />
+        {loading === true ? <Loader /> : null}
+        {/* {total > imagesData.length ? <Button click={handleLoadMore} /> : null} */}
+        <Button click={handleLoadMore} />
+        {isModalOpen && (
+          <Modal modalImageUrl={modalImageUrl} closeModal={closeModal} />
+        )}
+      </Conteiner>
+    </div>
+  );
+};
